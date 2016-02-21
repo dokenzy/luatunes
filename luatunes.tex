@@ -1,0 +1,115 @@
+\documentclass{article}
+
+% A LuaLaTeX example that imitate iTunes store.
+% http://conf.ktug.org/2016/
+% Thanks to sjname(https://github.com/sjnam/2016-kts)
+
+\usepackage[svgnames, x11names]{xcolor}
+
+\usepackage[a4paper]{geometry}
+\geometry{textwidth=0.9\paperwidth, textheight=0.9\paperheight, noheadfoot, nomarginpar}
+\setlength{\topskip}{0mm}
+\setlength{\parindent}{0mm}
+
+\usepackage{atveryend}
+\AtVeryEndDocument{
+	\luaexec{
+		itunes.clear_tmp_artwork()
+	}
+}
+
+\usepackage{hyperref}
+\usepackage{xparse}
+\usepackage{tabu}
+
+\usepackage{kotex}
+\setmainfont{Helvetica-Light}
+\setmainhangulfont{NotoSansKR-Light}
+
+\usepackage{tikz}
+\usetikzlibrary{patterns}
+\usepackage{tcolorbox}
+%\tcbuselibrary{fitting}
+\tcbuselibrary{skins}
+\tcbset{
+	top=0mm,
+	boxsep=0cm,
+	left=0cm,
+	right=0cm,
+	height=6cm,
+	nobeforeafter,
+	colback=white,
+	coltitle=black,
+	boxrule=0pt,
+	colback=white,
+	colframe=white,
+	halign=left,
+	subtitle style={
+		%before skip=-0.2cm,
+		text width=2.8cm,
+	}
+}
+
+\newtcbox{\pricebox}{%
+	colframe=gray!50,
+	boxrule=0.5pt,
+	colback=white,
+	top=-4mm,
+	bottom=-4mm,
+	left=-2mm,
+	right=-2mm,
+	width=1cm,
+	boxsep=5mm,
+	rounded corners=all,
+	lower separated=true,
+	sidebyside
+}
+
+\NewDocumentCommand{\album}{mmmmmm}{%
+\begin{minipage}{4cm}%
+	\begin{tcolorbox}%
+		{\href{#2}{\includegraphics[width=3cm, height=3cm]{#1}}}
+		\tcbsubtitle{\footnotesize{\textcolor{darkgray}{#4}}}
+		{\scriptsize{\textcolor{gray}{#5}}}
+		\pricebox{\scriptsize {\textcolor{black!70}{\$\,{#6}}}}
+	\end{tcolorbox}
+\end{minipage}%
+}
+
+\usepackage{luacode}
+\begin{luacode*}
+	itunes = require('itunes')
+	itunes.save_artwork('kpop')
+	-- mariah_carey
+\end{luacode*}
+
+\begin{document}
+\luaexec{
+	for k, v in pairs(results) do
+		img_name = itunes.tmp_img_name(k)
+		local max_length = 30
+		if v.kind ~= 'song' then
+			v.collectionName = v.trackName
+		end
+		if string.len(v.collectionName) > max_length then
+			local words = v.collectionName:split(' ')
+			local collectionName = ''
+			i = 1
+			while 1 do
+				if string.len(collectionName) > max_length then
+					break
+				end
+				collectionName = collectionName .. ' ' .. words[i]
+				i = i + 1
+			end
+			v.collectionName = collectionName .. '...'
+		end
+		local norm_collectionName = itunes.normalize(v.collectionName)
+		print(k .. ': ' .. norm_collectionName)
+		local norm_artistName = itunes.normalize(v.artistName)
+		album = '\\album{' .. img_name.. '}{' .. v.trackViewUrl .. '}{'.. v.kind .. '}{' .. norm_collectionName .. '}{' .. norm_artistName .. '}{' .. v.collectionPrice .. '}'
+		print(album)
+		tex.print(album)
+	end
+}
+\end{document}
